@@ -39,5 +39,6 @@ mast_base = assemble_mast_section(macro_geometry, corner_profile, primary_bracin
 cq.exporters.export(mast_base, 'square_mast_new.step')
 print("Exported square_mast_new.step successfully.")
 
+
 #moved show to end of file to export file immediately
 show(mast_base, alpha = 0.5, fxaa=False)
