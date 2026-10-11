@@ -12,7 +12,7 @@ from assembly import assemble_mast_section, create_truss_base, stack_assembly_se
 print("Imported base_assembly...")
 
 print("1. Starting script...")
-    
+
 
 # dims are in mm, length is in mm for consistency with the configuration file
 
@@ -33,9 +33,11 @@ secondary_bracing = BracingConfig(style=BracingStyle.WARREN, num_bays=8, diagona
 
 #create truss section by adding in corner posts
 mast_base = assemble_mast_section(macro_geometry, corner_profile, primary_bracing, secondary_bracing)
-show(mast_base, alpha = 0.5, fxaa=False)
 
 #two_masts = stack_assembly_sections([mast_base, mast_base]) # Stack two sections for a taller mast
 #show(two_masts_u, alpha = 0.5, fxaa=False)
 cq.exporters.export(mast_base, 'square_mast_new.step')
 print("Exported square_mast_new.step successfully.")
+
+#moved show to end of file to export file immediately
+show(mast_base, alpha = 0.5, fxaa=False)
