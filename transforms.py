@@ -81,10 +81,8 @@ def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height
             start, end = (bottom_left, top_right) if i % 2 == 0 else (bottom_right, top_left)
             panel = panel.add(build_strut(start, end, bracing.diagonal_profile))
 
-        #elif bracing_style == BracingStyle.INVERTED_V:
-        #    top_mid = (0, y_top, 0)
-        #    panel = panel.add(build_strut(bottom_left, top_mid, bracing.diagonal_profile))
-        #    panel = panel.add(build_strut(bottom_right, top_mid, bracing.diagonal_profile))
+        elif bracing_style == BracingStyle.DIAGONAL_ONLY:
+            panel = panel.add(build_strut(bottom_left, top_right, bracing.diagonal_profile))
 
         elif bracing_style == BracingStyle.INVERTED_V:
             top_mid = (0, y_top, 0)
