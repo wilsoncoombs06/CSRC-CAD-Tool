@@ -56,7 +56,7 @@ class TrussGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Parametric Crane Truss Generator - GT CSRC")
-        self.resize(600, 780)
+        self.resize(600, 820)
 
         self.settings = QSettings("GeorgiaTech", "CraneTrussGenerator")
 
@@ -73,29 +73,46 @@ class TrussGUI(QMainWindow):
         param_group = QGroupBox("Macro Geometry & Bracing Configuration")
         form_layout = QFormLayout(param_group)
 
+        # 1. Mast Length
         self.length_input = QLineEdit()
         form_layout.addRow("Mast Length (in):", self.length_input)
 
-        self.width_input = QLineEdit()
-        form_layout.addRow("Cross-Section Width (in):", self.width_input)
-
+        # 2. Mast Cross-Section Shape (Placed directly below length)
         self.shape_combo = QComboBox()
+        self.shape_combo.addItem("")  # Blank entry if no previous entry exists
         self.shape_combo.addItems(["SQUARE", "RECTANGULAR", "TRIANGULAR"])
+        self.shape_combo.currentTextChanged.connect(self.on_shape_changed)
         form_layout.addRow("Mast Cross-Section Shape:", self.shape_combo)
 
+        # Number of Bays
         self.bays_input = QLineEdit()
         form_layout.addRow("Number of Bays:", self.bays_input)
 
-        # Primary Bracing Style Dropdown
+        # Cross-Section Width
+        self.width_label = QLabel("Cross-Section Width (in):")
+        self.width_input = QLineEdit()
+        form_layout.addRow(self.width_label, self.width_input)
+
+        # Cross-Section Height/Depth (Rectangular only)
+        self.height_label = QLabel("Cross-Section Height/Depth (in):")
+        self.height_input = QLineEdit()
+        form_layout.addRow(self.height_label, self.height_input)
+
+        # Primary Bracing Style
+        self.primary_label = QLabel("Primary Bracing Style:")
         self.primary_bracing_combo = QComboBox()
+        self.primary_bracing_combo.addItem("")
         self.primary_bracing_combo.addItems(["INVERTED_V", "WARREN", "X_BRACE", "DIAGONAL_ONLY"])
-        form_layout.addRow("Primary Bracing Style:", self.primary_bracing_combo)
+        form_layout.addRow(self.primary_label, self.primary_bracing_combo)
 
-        # Secondary Bracing Style Dropdown (Added)
+        # Secondary Bracing Style
+        self.secondary_label = QLabel("Secondary Bracing Style:")
         self.secondary_bracing_combo = QComboBox()
+        self.secondary_bracing_combo.addItem("")
         self.secondary_bracing_combo.addItems(["INVERTED_V", "WARREN", "X_BRACE", "DIAGONAL_ONLY"])
-        form_layout.addRow("Secondary Bracing Style:", self.secondary_bracing_combo)
+        form_layout.addRow(self.secondary_label, self.secondary_bracing_combo)
 
+        # Filename
         self.filename_input = QLineEdit()
         form_layout.addRow("Output STEP Filename:", self.filename_input)
 
@@ -128,33 +145,49 @@ class TrussGUI(QMainWindow):
         main_layout.addWidget(log_group)
 
         self.load_settings()
+        self.on_shape_changed(self.shape_combo.currentText())
         self.log("GUI initialized successfully. Ready for parameter input.")
 
     def log(self, message):
         self.log_console.append(message)
 
+    def on_shape_changed(self, shape_str):
+        """Show or hide width, depth, primary, and secondary fields based on shape selection."""
+        is_selected = bool(shape_str and shape_str.strip())
+
+        # Width and Primary require a shape to be selected
+        self.width_label.setVisible(is_selected)
+        self.width_input.setVisible(is_selected)
+        self.primary_label.setVisible(is_selected)
+        self.primary_bracing_combo.setVisible(is_selected)
+
+        # Height/Depth only visible if RECTANGULAR is selected
+        is_rectangular = (shape_str == "RECTANGULAR")
+        self.height_label.setVisible(is_selected and is_rectangular)
+        self.height_input.setVisible(is_selected and is_rectangular)
+
+        # Secondary bracing hidden if TRIANGULAR or not selected
+        is_triangular = (shape_str == "TRIANGULAR")
+        self.secondary_label.setVisible(is_selected and not is_triangular)
+        self.secondary_bracing_combo.setVisible(is_selected and not is_triangular)
+
     def load_settings(self):
-        self.length_input.setText(self.settings.value("length", "489.0"))
-        self.width_input.setText(self.settings.value("width", "96.0"))
-
-        shape_val = self.settings.value("shape", "SQUARE")
-        self.shape_combo.setCurrentText(shape_val if shape_val else "SQUARE")
-
-        self.bays_input.setText(self.settings.value("bays", "8"))
-
-        primary_val = self.settings.value("primary_bracing", "INVERTED_V")
-        self.primary_bracing_combo.setCurrentText(primary_val if primary_val else "INVERTED_V")
-
-        secondary_val = self.settings.value("secondary_bracing", "WARREN")
-        self.secondary_bracing_combo.setCurrentText(secondary_val if secondary_val else "WARREN")
-
-        self.filename_input.setText(self.settings.value("filename", "square_mast_gui.step"))
+        # Load previous entries or leave blank if none exist
+        self.length_input.setText(self.settings.value("length", ""))
+        self.shape_combo.setCurrentText(self.settings.value("shape", ""))
+        self.bays_input.setText(self.settings.value("bays", ""))
+        self.width_input.setText(self.settings.value("width", ""))
+        self.height_input.setText(self.settings.value("height", ""))
+        self.primary_bracing_combo.setCurrentText(self.settings.value("primary_bracing", ""))
+        self.secondary_bracing_combo.setCurrentText(self.settings.value("secondary_bracing", ""))
+        self.filename_input.setText(self.settings.value("filename", ""))
 
     def save_settings(self):
         self.settings.setValue("length", self.length_input.text())
-        self.settings.setValue("width", self.width_input.text())
         self.settings.setValue("shape", self.shape_combo.currentText())
         self.settings.setValue("bays", self.bays_input.text())
+        self.settings.setValue("width", self.width_input.text())
+        self.settings.setValue("height", self.height_input.text())
         self.settings.setValue("primary_bracing", self.primary_bracing_combo.currentText())
         self.settings.setValue("secondary_bracing", self.secondary_bracing_combo.currentText())
         self.settings.setValue("filename", self.filename_input.text())
@@ -168,20 +201,32 @@ class TrussGUI(QMainWindow):
             self.log("\n--- Starting New Generation Task ---")
             self.save_settings()
 
+            shape_str = self.shape_combo.currentText()
+            if not shape_str:
+                raise ValueError("Please select a Mast Cross-Section Shape before generating.")
+
             length = float(self.length_input.text()) * 25.4
             width = float(self.width_input.text()) * 25.4
+
+            if shape_str == "RECTANGULAR":
+                height = float(self.height_input.text()) * 25.4
+            else:
+                height = width
+
             num_bays = int(self.bays_input.text())
-            shape_str = self.shape_combo.currentText()
             primary_str = self.primary_bracing_combo.currentText()
-            secondary_str = self.secondary_bracing_combo.currentText()
+            secondary_str = self.secondary_bracing_combo.currentText() if shape_str != "TRIANGULAR" else "DIAGONAL_ONLY"
             filename = self.filename_input.text()
+
+            if not primary_str:
+                raise ValueError("Please select a Primary Bracing Style.")
 
             mast_geo_enum = getattr(MastGeometry, shape_str)
             primary_style_enum = getattr(BracingStyle, primary_str)
-            secondary_style_enum = getattr(BracingStyle, secondary_str)
+            secondary_style_enum = getattr(BracingStyle, secondary_str) if shape_str != "TRIANGULAR" else BracingStyle.DIAGONAL_ONLY
 
-            self.log(f"Parameters: Shape={shape_str}, Length={length / 25.4:.1f}in, Width={width / 25.4:.1f}in")
-            self.log(f"Bracing: Primary={primary_str}, Secondary={secondary_str}, Bays={num_bays}")
+            self.log(f"Parameters: Shape={shape_str}, Length={length / 25.4:.1f}in, Width={width / 25.4:.1f}in, Height={height / 25.4:.1f}in")
+            self.log(f"Bracing: Primary={primary_str}, Secondary={secondary_str if shape_str != 'TRIANGULAR' else 'N/A'}, Bays={num_bays}")
 
             corner_profile = MemberProfile(
                 shape='hollow_rectangle', width=10 * 25.4, height=10 * 25.4, wall_thickness=0.625 * 25.4
@@ -190,7 +235,7 @@ class TrussGUI(QMainWindow):
             macro_geometry = MacroGeometry(
                 length=length,
                 width=width,
-                height=width,
+                height=height,
                 main_chord_profile=corner_profile,
                 cross_section_shape=mast_geo_enum
             )
