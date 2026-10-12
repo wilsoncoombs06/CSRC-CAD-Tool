@@ -29,7 +29,7 @@ def build_strut(pt1: tuple, pt2: tuple, profile: MemberProfile) -> cq.Workplane:
     # We must handle the edge case where the strut is perfectly vertical
     # (Because the cross product of two parallel vectors is zero)
     if abs(direction.dot(global_up)) > 0.9999:  # If perfectly vertical
-        x_dir = cq.Vector(1, 0, 0)  # Lock X to Global X
+        x_dir = cq.Vector(1, 0, 0)              # Lock X to Global X
     else:
         # Cross product guarantees a strictly horizontal X-axis!
         x_dir = global_up.cross(direction)
@@ -49,7 +49,6 @@ def build_strut(pt1: tuple, pt2: tuple, profile: MemberProfile) -> cq.Workplane:
     # 6. Move the newly created strut from the origin to pt1
     return strut.translate(v1)
 
-
 def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height: float) -> cq.Workplane:
     """
     Builds a flat 2D panel where width and height are local to the panel itself.
@@ -62,8 +61,9 @@ def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height
     bay_length = bracing.calculate_bay_length(panel_height)
 
     for i in range(bracing.num_bays):
-        y_bottom = i * bay_length + 0.1 * bay_length
-        y_top = (i + 1) * bay_length + 0.1 * bay_length
+        y_bottom = i * bay_length + 0.1*bay_length
+        y_top = (i + 1) * bay_length + 0.1*bay_length
+
 
         # Grid coordinates
         bottom_left = (-half_width, y_bottom, 0)
@@ -81,10 +81,23 @@ def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height
             start, end = (bottom_left, top_right) if i % 2 == 0 else (bottom_right, top_left)
             panel = panel.add(build_strut(start, end, bracing.diagonal_profile))
 
+        #elif bracing_style == BracingStyle.INVERTED_V:
+        #    top_mid = (0, y_top, 0)
+        #    panel = panel.add(build_strut(bottom_left, top_mid, bracing.diagonal_profile))
+        #    panel = panel.add(build_strut(bottom_right, top_mid, bracing.diagonal_profile))
+
         elif bracing_style == BracingStyle.INVERTED_V:
             top_mid = (0, y_top, 0)
             panel = panel.add(build_strut(bottom_left, top_mid, bracing.diagonal_profile))
             panel = panel.add(build_strut(bottom_right, top_mid, bracing.diagonal_profile))
+
+            # Edge case fix: If Inverted-V is chosen without horizontal struts,
+            # automatically add a tie/strut at the apex node to close the structural frame
+            if not bracing.has_horizontal_struts and bracing.diagonal_profile:
+                apex_left = (-half_width, y_top, 0)
+                apex_right = (half_width, y_top, 0)
+                # Use diagonal profile or a default stringer to bridge the apex node across the panel width
+                panel = panel.add(build_strut(apex_left, apex_right, bracing.diagonal_profile))
 
         elif bracing_style == BracingStyle.DIAGONAL_ONLY:
             panel = panel.add(build_strut(bottom_left, top_right, bracing.diagonal_profile))
@@ -94,7 +107,7 @@ def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height
         if bracing.has_horizontal_struts and bracing.horizontal_profile:
             panel = panel.add(build_strut(top_left, top_right, bracing.horizontal_profile))
 
-        # Add top and bottom "cap" struts if specified (horizontal strut but only at top/bottom of section)
+        #Add top and bottom "cap" struts if specified (horizontal strut but only at top/bottom of section)
         if bracing.has_cap_struts and bracing.cap_strut_profile:
             if i == 0:
                 panel = panel.add(build_strut(bottom_left, bottom_right, bracing.cap_strut_profile))
