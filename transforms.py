@@ -88,7 +88,6 @@ def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height
             top_mid = (0, y_top, 0)
             panel = panel.add(build_strut(bottom_left, top_mid, bracing.diagonal_profile))
             panel = panel.add(build_strut(bottom_right, top_mid, bracing.diagonal_profile))
-
             # Edge case fix: If Inverted-V is chosen without horizontal struts,
             # automatically add a tie/strut at the apex node to close the structural frame
             if not bracing.has_horizontal_struts and bracing.diagonal_profile:
@@ -97,8 +96,6 @@ def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height
                 # Use diagonal profile or a default stringer to bridge the apex node across the panel width
                 panel = panel.add(build_strut(apex_left, apex_right, bracing.diagonal_profile))
 
-        elif bracing_style == BracingStyle.DIAGONAL_ONLY:
-            panel = panel.add(build_strut(bottom_left, top_right, bracing.diagonal_profile))
 
         # Add horizontal struts only if needed and only at the top of the bay 
         # (to avoid overlapping the bottom of the next bay)
