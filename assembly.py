@@ -161,4 +161,3 @@ def stack_assembly_sections(sections: list[cq.Workplane]) -> cq.Workplane:
         current_height += section_height
     return stacked
 
-
