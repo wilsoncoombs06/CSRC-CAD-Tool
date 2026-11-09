@@ -23,31 +23,35 @@ def build_strut(pt1: tuple, pt2: tuple, profile: MemberProfile) -> cq.Workplane:
 
     direction = direction.normalized()
 
+    # --- ADD THIS OVERLAP LOGIC ---
+    # Extend the strut on both ends so it penetrates into the corner posts (e.g., 12.7 mm / 0.5 in)
+    overlap = 12.7
+    extended_distance = distance + (2 * overlap)
+    extended_v1 = v1 - (direction * overlap)
+    # -----------------------------
+
     # 3. Calculate the locked X-direction to prevent twisting
     global_up = cq.Vector(0, 0, 1)
 
-    # We must handle the edge case where the strut is perfectly vertical
-    # (Because the cross product of two parallel vectors is zero)
     if abs(direction.dot(global_up)) > 0.9999:  # If perfectly vertical
         x_dir = cq.Vector(1, 0, 0)              # Lock X to Global X
     else:
-        # Cross product guarantees a strictly horizontal X-axis!
         x_dir = global_up.cross(direction)
 
     # 4. Create the custom plane with the locked xDir
     strut_plane = cq.Plane(origin=(0, 0, 0), xDir=x_dir, normal=direction)
 
-    # 5. Build the strut
+    # 5. Build the strut using the extended distance
     sketch = create_profile_sketch(profile)
 
     strut = (
         cq.Workplane(strut_plane)
         .placeSketch(sketch)
-        .extrude(distance, combine=True)
+        .extrude(extended_distance, combine=True)
     )
 
-    # 6. Move the newly created strut from the origin to pt1
-    return strut.translate(v1)
+    # 6. Move the newly created strut from the origin to extended_v1
+    return strut.translate(extended_v1)
 
 def build_2d_flat_panel(bracing: BracingConfig, panel_width: float, panel_height: float) -> cq.Workplane:
     """
