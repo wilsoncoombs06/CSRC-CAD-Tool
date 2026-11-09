@@ -23,7 +23,6 @@ def build_strut(pt1: tuple, pt2: tuple, profile: MemberProfile) -> cq.Workplane:
 
     direction = direction.normalized()
 
-    # --- ADD THIS OVERLAP LOGIC ---
     # Extend the strut on both ends so it penetrates into the corner posts (e.g., 12.7 mm / 0.5 in)
     overlap = 12.7
     extended_distance = distance + (2 * overlap)
